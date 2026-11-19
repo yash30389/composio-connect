@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Composio Multi-User Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #121a2e;
+      --line: #27324b;
+      --text: #edf2ff;
+      --muted: #9ba9c5;
+      --accent: #a89bff;
+      --green: #53d6a0;
+      --red: #ff9aa9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(ellipse at top left, #1b2550 0, transparent 38%), var(--bg);
+      color: var(--text);
+      font: 15px/1.5 system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    .wrap { max-width: 1200px; margin: auto; padding: 32px 20px 60px; }
+    header, .row, .toolbar, .user-actions, .card-top {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    header { margin-bottom: 30px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 800; }
+    .logo {
+      display: grid; place-items: center; width: 42px; height: 42px;
+      border-radius: 13px; background: var(--accent); color: #11152c;
+    }
+    .pill {
+      color: #c8c0ff; border: 1px solid #50467d; background: #201b3d;
+      padding: 7px 11px; border-radius: 99px; font-size: 12px;
+    }
+    h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.1; margin: 10px 0; letter-spacing: -.04em; }
+    h2 { font-size: 19px; margin: 0 0 12px; }
+    h3 { font-size: 16px; margin: 14px 0 5px; }
+    p { color: var(--muted); }
+    .hero { margin-bottom: 25px; }
+    .eyebrow { color: #b6aaff; font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    .panel, .stat, .card {
+      background: rgba(18, 26, 46, .92); border: 1px solid var(--line); border-radius: 15px;
+    }
+    .panel { padding: 18px; margin-bottom: 22px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
+    .stat { padding: 17px; }
+    .stat strong { display: block; font-size: 25px; }
+    .stat span { color: var(--muted); font-size: 12px; }
+    .toolbar { justify-content: flex-start; flex-wrap: wrap; margin-bottom: 16px; }
+    input, select {
+      background: #0d1426; color: var(--text); border: 1px solid #34405d;
+      border-radius: 9px; padding: 11px 12px; font: inherit; min-width: 160px;
+    }
+    input:focus, select:focus { outline: 2px solid #7669d8; outline-offset: 1px; }
+    #search { flex: 1; min-width: 210px; }
+    button {
+      border: 0; border-radius: 9px; padding: 10px 13px;
+      color: #12132a; background: #b3a8ff; font: inherit; font-size: 13px;
+      font-weight: 750; cursor: pointer;
+    }
+    button.secondary { color: var(--text); background: #26314b; border: 1px solid #3b4968; }
+    button.danger { color: #ffe2e7; background: #542431; border: 1px solid #854051; }
+    button:disabled { opacity: .5; cursor: wait; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .message { display: none; padding: 12px 14px; border-radius: 10px; margin: 0 0 16px; }
+    .message.show { display: block; }
+    .message.info { border: 1px solid #4b426f; background: #1c1933; color: #ddd7ff; }
+    .message.error { border: 1px solid #7a3c4b; background: #321a26; color: #ffced7; }
+    .message.success { border: 1px solid #28674f; background: #102d27; color: #8af0c5; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .card { padding: 17px; display: flex; flex-direction: column; min-height: 225px; }
+    .card:hover { border-color: #6559a5; }
+    .appicon {
+      display: grid; place-items: center; width: 40px; height: 40px;
+      border: 1px solid #394564; background: #202a44; border-radius: 11px; font-weight: 800;
+    }
+    .status { font-size: 11px; border: 1px solid #34405d; border-radius: 99px; padding: 4px 8px; color: var(--muted); }
+    .status.connected { color: #8af0c5; border-color: #28674f; background: #102d27; }
+    .card p { font-size: 12px; margin: 0 0 12px; flex: 1; }
+    .meta { font-size: 11px; color: #aebbd4; margin-bottom: 12px; }
+    .account-list { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px; }
+    .account { padding: 7px 0; font-size: 12px; overflow-wrap: anywhere; }
+    .account strong { display: block; }
+    .empty { color: var(--muted); padding: 25px; text-align: center; grid-column: 1 / -1; }
+    .section-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 22px 0 12px; }
+    .section-head span { color: var(--muted); font-size: 12px; }
+    .foot { margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); font-size: 12px; }
+    a { color: #c5bcff; }
+    @media (max-width: 850px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) {
+      .wrap { padding: 22px 12px; }
+      .grid, .stats { grid-template-columns: 1fr; }
+      header { align-items: flex-start; }
+      .pill { display: none; }
+      .user-actions { align-items: stretch; flex-direction: column; }
+      .user-actions input, .user-actions select, .user-actions button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div class="brand"><div class="logo">C</div><span>Composio Connect</span></div>
+    <div class="pill">LOCAL MULTI-USER TEST</div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Account integration workspace</div>
+    <h1>One dashboard. Separate users. Multiple accounts.</h1>
+    <p>Switch users, authorize their apps, and inspect each user's connected accounts.</p>
+  </section>
+
+  <div id="message" class="message" role="status" aria-live="polite"></div>
+
+  <section class="panel">
+    <h2>Application users</h2>
+    <p class="muted">Demo users have separate Composio user IDs. Adding a user here does not create a Google account.</p>
+
+    <div class="user-actions">
+      <select id="userSelect" aria-label="Select application user"></select>
+      <input id="newUserName" placeholder="New user name" maxlength="80" aria-label="New user name">
+      <button id="addUserButton">Add user</button>
+    </div>
+
+    <div class="user-actions" style="margin-top: 10px">
+      <button id="renameUserButton" class="secondary">Rename selected user</button>
+      <button id="deleteUserButton" class="danger">Delete selected demo user</button>
+      <button id="refreshButton" class="secondary">Refresh connections</button>
+    </div>
+    <p id="selectedUserInfo" class="muted"></p>
+  </section>
+
+  <section class="stats" aria-label="Summary">
+    <div class="stat"><strong id="total">0</strong><span>Available integrations</span></div>
+    <div class="stat"><strong id="connected">—</strong><span>Connected integration types</span></div>
+    <div class="stat"><strong id="accountTotal">—</strong><span>Active connected accounts</span></div>
+  </section>
+
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Search apps (Gmail, GitHub, Slack…)" aria-label="Search apps">
+    <select id="category" aria-label="Filter category">
+      <option value="all">All categories</option>
+    </select>
+    <select id="statusFilter" aria-label="Filter status">
+      <option value="all">All statuses</option>
+      <option value="connected">Connected</option>
+      <option value="not_connected">Not connected</option>
+    </select>
+  </div>
+
+  <div class="section-head">
+    <h2>Integration catalog</h2>
+    <span id="count">Loading…</span>
+  </div>
+  <section id="grid" class="grid" aria-live="polite"></section>
+
+  <div class="section-head">
+    <h2>All connected accounts for selected user</h2>
+    <span id="accountCount">Loading…</span>
+  </div>
+  <section id="accountsPanel" class="panel">
+    <p class="muted">Connected accounts will appear here.</p>
+  </section>
+
+  <div class="foot">
+    <strong>Security:</strong> this demo uses a client-selected user ID for testing.
+    Never trust a client-supplied user ID in a public application. In production,
+    derive the Composio user ID from the authenticated server-side session.
+    Do not put your Composio API key in this file.
+    <br><br>
+    <a href="https://docs.composio.dev/docs/authentication" target="_blank" rel="noreferrer">Composio authentication docs</a>
+    ·
+    <a href="https://docs.composio.dev/docs/authentication/managing-multiple-connected-accounts" target="_blank" rel="noreferrer">Multiple connected accounts</a>
+  </div>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const grid = $("grid");
+  const message = $("message");
+  const userSelect = $("userSelect");
+  const search = $("search");
+  const category = $("category");
+  const statusFilter = $("statusFilter");
+
+  let users = [];
+  let tools = [];
+  let accounts = [];
+  let selectedUserId = "";
+  let loading = false;
+
+  function showMessage(text, type = "info") {
+    message.textContent = text;
+    message.className = `message show ${type}`;
+  }
+
+  function clearMessage() {
+    message.textContent = "";
+    message.className = "message";
+  }
+
+  function headers() {
+    return {
+      "Content-Type": "application/json",
+      "x-demo-user-id": selectedUserId
+    };
+  }
+
+  async function api(url, options = {}) {
+    const response = await fetch(url, {
+      cache: "no-store",
+      ...options,
+      headers: {
+        ...headers(),
+        ...(options.headers || {})
+      }
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || `Request failed (${response.status})`);
+    }
+
+    return data;
+  }
+
+  function selectedUser() {
+    return users.find((user) => user.id === selectedUserId) || null;
+  }
+
+  function populateUsers() {
+    userSelect.replaceChildren();
+
+    for (const user of users) {
+      const option = document.createElement("option");
+      option.value = user.id;
+      option.textContent = `${user.name} (${user.id})`;
+      userSelect.append(option);
+    }
+
+    if (users.some((user) => user.id === selectedUserId)) {
+      userSelect.value = selectedUserId;
+    } else {
+      selectedUserId = users[0]?.id || "";
+      userSelect.value = selectedUserId;
+    }
+
+    const user = selectedUser();
+    $("selectedUserInfo").textContent = user
+      ? `Selected: ${user.name} · Composio user ID: ${user.id}`
+      : "No users exist. Add a demo user to begin.";
+  }
+
+  async function loadUsers() {
+    const data = await api("/api/users", {
+      headers: { "Content-Type": "application/json" }
+    });
+
+    users = data.users || [];
+    populateUsers();
+  }
+
+  function setLoading(isLoading) {
+    loading = isLoading;
+    $("refreshButton").disabled = isLoading;
+    $("addUserButton").disabled = isLoading;
+  }
+
+  async function loadDashboard() {
+    if (!selectedUserId) {
+      tools = [];
+      accounts = [];
+      render();
+      renderAccounts();
+      return;
+    }
+
+    setLoading(true);
+    $("count").textContent = "Loading integrations…";
+
+    try {
+      const data = await api("/api/toolkits");
+      tools = data.tools || [];
+      accounts = data.connectedAccounts || [];
+
+      const categories = [...new Set(tools.map((tool) => tool.category))].sort();
+      const previousCategory = category.value;
+
+      category.replaceChildren(new Option("All categories", "all"));
+      for (const name of categories) {
+        category.add(new Option(name, name));
+      }
+      if (categories.includes(previousCategory)) category.value = previousCategory;
+
+      $("total").textContent = tools.length;
+      $("connected").textContent = tools.filter((tool) => tool.status === "connected").length;
+      $("accountTotal").textContent = accounts.filter(
+        (account) => account.status.toUpperCase() === "ACTIVE"
+      ).length;
+
+      const user = selectedUser();
+      $("selectedUserInfo").textContent = user
+        ? `Selected: ${user.name} · Composio user ID: ${user.id}`
+        : "";
+
+      render();
+      renderAccounts();
+
+      const params = new URLSearchParams(location.search);
+      if (params.get("status") === "success") {
+        showMessage(
+          "Returned from Composio. The selected user's connection list has been refreshed.",
+          "success"
+        );
+        history.replaceState({}, "", location.pathname);
+      }
+    } catch (error) {
+      showMessage(error.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function render() {
+    const query = search.value.trim().toLowerCase();
+    const selectedCategory = category.value;
+    const selectedStatus = statusFilter.value;
+
+    const visible = tools.filter((tool) => {
+      const searchable = `${tool.name} ${tool.description} ${tool.category}`.toLowerCase();
+      return searchable.includes(query)
+        && (selectedCategory === "all" || tool.category === selectedCategory)
+        && (selectedStatus === "all" || tool.status === selectedStatus);
+    });
+
+    $("count").textContent = `${visible.length} integration${visible.length === 1 ? "" : "s"}`;
+    grid.replaceChildren();
+
+    if (!visible.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "No matching integrations. Try a different filter.";
+      grid.append(empty);
+      return;
+    }
+
+    for (const tool of visible) {
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const top = document.createElement("div");
+      top.className = "card-top";
+
+      const icon = document.createElement("div");
+      icon.className = "appicon";
+      icon.textContent = tool.icon;
+
+      const status = document.createElement("span");
+      status.className = "status" + (tool.status === "connected" ? " connected" : "");
+      status.textContent = tool.status === "connected"
+        ? `Connected · ${tool.connectedCount}`
+        : "Not connected";
+
+      top.append(icon, status);
+
+      const title = document.createElement("h3");
+      title.textContent = tool.name;
+
+      const description = document.createElement("p");
+      description.textContent = tool.description;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = `${tool.category} · ${tool.auth}`;
+
+      const aliasInput = document.createElement("input");
+      aliasInput.placeholder = tool.slug === "gmail"
+        ? "Alias (e.g. work-gmail)"
+        : `Optional alias for ${tool.name}`;
+      aliasInput.setAttribute("aria-label", `${tool.name} account alias`);
+      aliasInput.style.width = "100%";
+      aliasInput.style.minWidth = "0";
+      aliasInput.style.marginBottom = "10px";
+
+      const connectButton = document.createElement("button");
+      connectButton.textContent = tool.slug === "gmail"
+        ? "Connect another account"
+        : tool.status === "connected" ? "Connect another account" : "Connect account";
+
+      connectButton.addEventListener("click", async () => {
+        const alias = aliasInput.value.trim();
+
+        connectButton.disabled = true;
+        connectButton.textContent = "Preparing secure link…";
+
+        try {
+          const data = await api(`/api/connect/${encodeURIComponent(tool.slug)}`, {
+            method: "POST",
+            body: JSON.stringify({ alias })
+          });
+
+          showMessage(
+            `Opening ${tool.name} authorization for ${selectedUser()?.name || selectedUserId}. Complete the provider consent flow, then return to this dashboard.`,
+            "info"
+          );
+
+          window.location.assign(data.redirectUrl);
+        } catch (error) {
+          showMessage(error.message, "error");
+          connectButton.disabled = false;
+          connectButton.textContent = "Try again";
+        }
+      });
+
+      card.append(top, title, description, meta);
+
+      const matchingAccounts = (tool.accounts || []);
+      if (matchingAccounts.length) {
+        const list = document.createElement("div");
+        list.className = "account-list";
+
+        for (const account of matchingAccounts) {
+          const item = document.createElement("div");
+          item.className = "account";
+
+          const name = document.createElement("strong");
+          name.textContent = account.displayName || account.alias || "Connected account";
+
+          const detail = document.createElement("span");
+          detail.className = "muted";
+          detail.textContent = `${account.status} · ${account.id}`;
+
+          item.append(name, detail);
+          list.append(item);
+        }
+        card.append(list);
+      }
+
+      card.append(aliasInput, connectButton);
+      grid.append(card);
+    }
+  }
+
+  function renderAccounts() {
+    const panel = $("accountsPanel");
+    panel.replaceChildren();
+
+    $("accountCount").textContent = `${accounts.length} record${accounts.length === 1 ? "" : "s"}`;
+
+    if (!accounts.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "No connected accounts found for this application user yet.";
+      panel.append(empty);
+      return;
+    }
+
+    for (const account of accounts) {
+      const row = document.createElement("div");
+      row.className = "account";
+
+      const name = document.createElement("strong");
+      name.textContent = `${account.toolkit} — ${account.displayName || account.alias || "Account"}`;
+
+      const details = document.createElement("div");
+      details.className = "muted";
+      details.textContent = `Status: ${account.status} · Alias: ${account.alias || "none"} · ID: ${account.id}`;
+
+      row.append(name, details);
+      panel.append(row);
+    }
+  }
+
+  async function addUser() {
+    const name = $("newUserName").value.trim();
+    if (name.length < 2) {
+      showMessage("Enter a user name with at least 2 characters.", "error");
+      return;
+    }
+
+    try {
+      const data = await api("/api/users", {
+        method: "POST",
+        body: JSON.stringify({ name })
+      });
+
+      users.push(data.user);
+      selectedUserId = data.user.id;
+      $("newUserName").value = "";
+      populateUsers();
+      clearMessage();
+      await loadDashboard();
+      showMessage(`Created demo user ${data.user.name}.`, "success");
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  }
+
+  async function renameUser() {
+    const user = selectedUser();
+    if (!user) return;
+
+    const newName = prompt("Enter the new display name:", user.name);
+    if (newName === null) return;
+
+    try {
+      const data = await api(`/api/users/${encodeURIComponent(user.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name: newName.trim() })
+      });
+
+      users = users.map((item) => item.id === user.id ? data.user : item);
+      populateUsers();
+      showMessage("User name updated. The Composio user ID did not change.", "success");
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  }
+
+  async function deleteUser() {
+    const user = selectedUser();
+    if (!user) return;
+
+    if (!confirm(
+      `Delete local demo user "${user.name}"?\n\nThis does NOT delete or revoke Composio connected accounts.`
+    )) return;
+
+    try {
+      await api(`/api/users/${encodeURIComponent(user.id)}`, {
+        method: "DELETE"
+      });
+
+      users = users.filter((item) => item.id !== user.id);
+      selectedUserId = users[0]?.id || "";
+      populateUsers();
+      await loadDashboard();
+      showMessage(
+        "Local demo user deleted. Any Composio accounts remain stored remotely.",
+        "success"
+      );
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  }
+
+  userSelect.addEventListener("change", async () => {
+    selectedUserId = userSelect.value;
+    clearMessage();
+    await loadDashboard();
+  });
+
+  $("addUserButton").addEventListener("click", addUser);
+  $("renameUserButton").addEventListener("click", renameUser);
+  $("deleteUserButton").addEventListener("click", deleteUser);
+  $("refreshButton").addEventListener("click", loadDashboard);
+  $("newUserName").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") addUser();
+  });
+
+  search.addEventListener("input", render);
+  category.addEventListener("change", render);
+  statusFilter.addEventListener("change", render);
+
+  async function init() {
+    try {
+      await loadUsers();
+      if (selectedUserId) await loadDashboard();
+    } catch (error) {
+      showMessage(error.message, "error");
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
